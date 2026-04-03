@@ -66,14 +66,27 @@
     const Trash2 = ({className, title}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><title>{title}</title><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
 
     // --- Firebase Setup ---
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-      apiKey: "",
-      authDomain: "",
-      projectId: "",
-      storageBucket: "",
-      messagingSenderId: "",
-      appId: ""
-    };
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDZv31PprpWS54nmd-b4Z3pO0zK6IZIIAg",
+  authDomain: "my-fissher-sns.firebaseapp.com",
+  projectId: "my-fissher-sns",
+  storageBucket: "my-fissher-sns.firebasestorage.app",
+  messagingSenderId: "1019088757788",
+  appId: "1:1019088757788:web:e3c45ee0c89d12c6702bd9",
+  measurementId: "G-7JS1BMYRBQ"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
