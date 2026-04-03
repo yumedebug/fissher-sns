@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Fissher</title>
+  <title>Fissher SNS</title>
 
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     (function() {
@@ -18,10 +19,12 @@
     tailwind.config = { darkMode: 'class' }
   </script>
 
+  <!-- React & Babel -->
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- Firebase SDK Import Map -->
   <script type="importmap">
     {
       "imports": {
@@ -39,19 +42,29 @@
     import { initializeApp } from 'firebase/app';
     import { 
       getFirestore, collection, addDoc, onSnapshot, serverTimestamp, 
-      doc, getDoc, setDoc
+      updateDoc, doc, increment, setDoc, getDoc, deleteDoc
     } from 'firebase/firestore';
     import { 
-      getAuth, signInAnonymously
+      getAuth, signInAnonymously, onAuthStateChanged 
     } from 'firebase/auth';
 
     const { useState, useEffect } = React;
 
-    // --- Icons ---
-    const Fish = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-4.94 6-8.5 6-3.56 0-6.06-2.54-7-6Z"/><path d="M18 12v.01"/><path d="M2 9v6l5-3-5-3Z"/></svg>;
-    const AlertCircle = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
+    // --- アイコン群 (デザインを完全復元) ---
+    const Fish = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-4.94 6-8.5 6-3.56 0-6.06-2.54-7-6Z"/><path d="M18 12v.01"/><path d="M2 9v6l5-3-5-3Z"/></svg>;
+    const User = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+    const Hash = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>;
+    const Smile = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>;
+    const RefreshCw = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
+    const MessageSquare = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
+    const Heart = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
+    const LogOut = ({className, title}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><title>{title}</title><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>;
+    const AlertCircle = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>;
+    const Sun = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>;
+    const Moon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
+    const Trash2 = ({className, title}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><title>{title}</title><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
 
-    // --- Firebase 設定 ---
+    // --- Firebase Setup (重複しないよう、ここに1回だけ記述) ---
     const firebaseConfig = {
       apiKey: "AIzaSyDZv31PprpWS54nmd-b4Z3pO0zK6IZIIAg",
       authDomain: "my-fissher-sns.firebaseapp.com",
@@ -64,155 +77,555 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = 'fisher-sns-v3';
+    const appId = 'fissher-sns-v3'; // データベースの保存先フォルダ名
 
     function App() {
-      const [appUser, setAppUser] = useState(null);
+      // --- テーマ設定 ---
+      const [isDark, setIsDark] = useState(() => {
+        try {
+          const saved = localStorage.getItem('theme');
+          return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        } catch(e) { return false; }
+      });
+
+      useEffect(() => {
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          localStorage.setItem('theme', 'light');
+        }
+      }, [isDark]);
+
+      const toggleTheme = () => setIsDark(!isDark);
+
+      // --- システム・ユーザー状態 ---
+      const [firebaseUser, setFirebaseUser] = useState(null);
       const [loading, setLoading] = useState(true);
-      const [posts, setPosts] = useState([]);
-      const [newPost, setNewPost] = useState('');
+      const [appUser, setAppUser] = useState(null);
+
+      // ログイン画面用
+      const [authMode, setAuthMode] = useState('login');
       const [customIdInput, setCustomIdInput] = useState('');
       const [userNameInput, setUserNameInput] = useState('');
       const [authError, setAuthError] = useState('');
       const [isAuthLoading, setIsAuthLoading] = useState(false);
 
-      const MAX_CHARS = 140;
+      // アプリ用状態
+      const [posts, setPosts] = useState([]);
+      const [newPost, setNewPost] = useState('');
+      const [isSubmitting, setIsSubmitting] = useState(false);
+      const [replyTexts, setReplyTexts] = useState({});
+      const [isFetchingTrend, setIsFetchingTrend] = useState(false);
+      const [deleteTarget, setDeleteTarget] = useState(null);
 
+      const MAX_CHARS = 150;
+
+      // 1. Firebase初期化 & 認証確認
       useEffect(() => {
-        const init = async () => {
-          try {
-            await signInAnonymously(auth);
-            const savedId = localStorage.getItem('fissher_id');
-            const savedName = localStorage.getItem('fissher_name');
-            if (savedId && savedName) {
-              setAppUser({ customId: savedId, userName: savedName });
-            }
-          } catch (e) {
-            console.error("Auth Init Error:", e);
-          } finally {
+        let isMounted = true;
+        
+        // ローカルストレージからの即時復旧
+        const savedId = localStorage.getItem('fissher_custom_id');
+        const savedName = localStorage.getItem('fissher_user_name');
+        if (savedId && savedName) {
+           setAppUser({ customId: savedId, userName: savedName });
+        }
+
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (!isMounted) return;
+          if (user) {
+            setFirebaseUser(user);
             setLoading(false);
+          } else {
+            try {
+              await signInAnonymously(auth);
+            } catch (error) {
+              console.error("Auth Error:", error);
+              setLoading(false);
+            }
           }
-        };
-        init();
+        });
+
+        return () => { isMounted = false; unsubscribe(); };
       }, []);
 
+      // 2. タイムラインのリアルタイム取得
       useEffect(() => {
-        if (!appUser) return;
-        const q = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
-        return onSnapshot(q, (snapshot) => {
-          const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-          setPosts(docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
-        });
-      }, [appUser]);
+        if (!firebaseUser) return;
 
+        const postsRef = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
+        const unsubscribe = onSnapshot(
+          postsRef,
+          (snapshot) => {
+            const postsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const sorted = postsData.sort((a, b) => {
+              const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
+              const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
+              return dateB - dateA;
+            });
+            setPosts(sorted);
+          },
+          (error) => {
+             console.error("Firestore Subscribe Error:", error);
+             // オフラインエラーが出た場合はFirestoreのルールが原因です
+          }
+        );
+        return () => unsubscribe();
+      }, [firebaseUser]);
+
+      // --- 認証ハンドラー ---
       const handleRegister = async (e) => {
         e.preventDefault();
         setAuthError('');
         const cid = customIdInput.trim().toLowerCase();
-        if (!/^[a-zA-Z0-9]{3,15}$/.test(cid)) return setAuthError('IDは3-15文字の半角英数字のみです');
-        if (!userNameInput.trim()) return setAuthError('名前を入力してください');
-
+        if (!/^[a-zA-Z0-9]{3,15}$/.test(cid)) {
+          setAuthError('IDは3〜15文字の半角英数字にしてください');
+          return;
+        }
+        if (!userNameInput.trim()) {
+          setAuthError('名前を入力してください');
+          return;
+        }
+        
         setIsAuthLoading(true);
         try {
-          const ref = doc(db, 'artifacts', appId, 'public', 'data', 'accounts', cid);
-          const snap = await getDoc(ref);
-          if (snap.exists()) {
+          const accountRef = doc(db, 'artifacts', appId, 'public', 'data', 'accounts', cid);
+          const accountSnap = await getDoc(accountRef);
+          
+          if (accountSnap.exists()) {
             setAuthError('このIDは既に使用されています');
             setIsAuthLoading(false);
             return;
           }
           
-          await setDoc(ref, { userName: userNameInput.trim(), createdAt: serverTimestamp() });
-          localStorage.setItem('fissher_id', cid);
-          localStorage.setItem('fissher_name', userNameInput.trim());
+          await setDoc(accountRef, { userName: userNameInput.trim(), createdAt: serverTimestamp() });
+          
+          localStorage.setItem('fissher_custom_id', cid);
+          localStorage.setItem('fissher_user_name', userNameInput.trim());
           setAppUser({ customId: cid, userName: userNameInput.trim() });
         } catch (e) {
-          console.error("Registration Error:", e);
-          setAuthError(`登録エラー: Firestoreのルールを確認してください。`);
+          console.error(e);
+          setAuthError('登録エラー。Firestoreのルール(Rules)がテストモードか確認してください。');
         }
         setIsAuthLoading(false);
       };
 
-      const handlePost = async (e) => {
+      const handleLogin = async (e) => {
         e.preventDefault();
-        if (!newPost.trim() || newPost.length > MAX_CHARS) return;
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), {
-          text: newPost,
-          userId: appUser.customId,
-          userName: appUser.userName,
-          createdAt: serverTimestamp()
-        });
-        setNewPost('');
+        setAuthError('');
+        const cid = customIdInput.trim().toLowerCase();
+        if (!cid) return;
+
+        setIsAuthLoading(true);
+        try {
+          const accountRef = doc(db, 'artifacts', appId, 'public', 'data', 'accounts', cid);
+          const accountSnap = await getDoc(accountRef);
+          
+          if (!accountSnap.exists()) {
+            setAuthError('IDが見つかりません。新規作成してください。');
+            setIsAuthLoading(false);
+            return;
+          }
+          
+          const uName = accountSnap.data().userName;
+          localStorage.setItem('fissher_custom_id', cid);
+          localStorage.setItem('fissher_user_name', uName);
+          setAppUser({ customId: cid, userName: uName });
+        } catch (e) {
+          setAuthError('ログインに失敗しました');
+        }
+        setIsAuthLoading(false);
       };
 
-      if (loading) return <div className="h-screen flex items-center justify-center dark:text-white">読み込み中...</div>;
+      const handleLogout = () => {
+        localStorage.removeItem('fissher_custom_id');
+        localStorage.removeItem('fissher_user_name');
+        setAppUser(null);
+        setCustomIdInput('');
+        setUserNameInput('');
+      };
 
+      // --- 投稿・アクションハンドラー ---
+      const handleSubmitPost = async (e) => {
+        e.preventDefault();
+        if (!newPost.trim() || !appUser || isSubmitting || newPost.length > MAX_CHARS) return;
+
+        setIsSubmitting(true);
+        try {
+          await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'posts'), {
+            text: newPost,
+            userId: appUser.customId,
+            userName: appUser.userName,
+            likes: 0,
+            replyCount: 0,
+            replies: [],
+            createdAt: serverTimestamp(),
+          });
+          setNewPost('');
+        } catch (error) {
+          console.error("Post Error:", error);
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      const handleReply = async (postId) => {
+        const text = replyTexts[postId] || '';
+        if (!text.trim() || !appUser || text.length > 150) return;
+        
+        try {
+          const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId);
+          const post = posts.find(p => p.id === postId);
+          const newReplies = [
+            ...(post.replies || []),
+            {
+              id: crypto.randomUUID(),
+              text: text,
+              userName: appUser.userName,
+              userId: appUser.customId,
+              createdAt: new Date().toISOString()
+            }
+          ];
+
+          await updateDoc(postRef, {
+            replies: newReplies,
+            replyCount: increment(1)
+          });
+          setReplyTexts(prev => ({ ...prev, [postId]: '' }));
+        } catch (error) {
+          console.error("Reply Error:", error);
+        }
+      };
+
+      const handleLike = async (postId) => {
+        if (!appUser) return;
+        try {
+          const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId);
+          await updateDoc(postRef, { likes: increment(1) });
+        } catch (error) {
+          console.error("Like Error:", error);
+        }
+      };
+
+      const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        const { type, postId, replyId } = deleteTarget;
+        
+        try {
+          if (type === 'post') {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId));
+          } else if (type === 'reply') {
+            const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId);
+            const post = posts.find(p => p.id === postId);
+            if (post) {
+              const newReplies = post.replies.filter(r => r.id !== replyId);
+              await updateDoc(postRef, {
+                replies: newReplies,
+                replyCount: increment(-1)
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Delete Error:", error);
+        } finally {
+          setDeleteTarget(null);
+        }
+      };
+
+      const handleAddTrend = () => {
+        if (isFetchingTrend) return;
+        setIsFetchingTrend(true);
+        setTimeout(() => {
+          const tags = ['#海', '#Fissher', '#プロセカ', '#マイクラ', '#日常', '#ボカロ', '#お腹すいた'];
+          const tag = tags[Math.floor(Math.random() * tags.length)];
+          setNewPost(p => p + (p && !p.endsWith(' ') ? ' ' : '') + tag + ' ');
+          setIsFetchingTrend(false);
+        }, 500);
+      };
+
+      const renderText = (text) => {
+        if (!text) return null;
+        return text.split(/(#[^\s]+)/g).map((part, i) => 
+          part.startsWith('#') 
+          ? <span key={i} className="text-cyan-500 dark:text-cyan-400 font-bold hover:underline cursor-pointer">{part}</span>
+          : <span key={i}>{part}</span>
+        );
+      };
+
+      // --- 画面レンダリング ---
+
+      if (loading) {
+        return (
+          <div className="flex flex-col items-center justify-center min-h-screen dark:bg-slate-950">
+            <Fish className="w-12 h-12 text-cyan-500 animate-bounce mb-4" />
+            <p className="font-bold text-cyan-600 dark:text-cyan-400">海を読み込み中...</p>
+          </div>
+        );
+      }
+
+      // 未ログイン画面
       if (!appUser) {
         return (
-          <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-800">
-              <h1 className="text-3xl font-black text-center mb-6 dark:text-white flex items-center justify-center gap-2">
-                <Fish className="w-8 h-8 text-cyan-500" /> Fissher
-              </h1>
-              {authError && <div className="bg-rose-50 text-rose-500 p-3 rounded-xl mb-4 text-sm font-bold flex items-center gap-2"><AlertCircle className="w-4 h-4"/>{authError}</div>}
-              <form onSubmit={handleRegister} className="space-y-4">
-                <input value={customIdInput} onChange={e=>setCustomIdInput(e.target.value)} placeholder="ID (半角英数字3-15文字)" className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500 transition-all" />
-                <input value={userNameInput} onChange={e=>setUserNameInput(e.target.value)} placeholder="表示名" className="w-full p-4 rounded-2xl bg-slate-100 dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500 transition-all" />
-                <button disabled={isAuthLoading} className="w-full bg-cyan-500 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 rounded-2xl hover:bg-cyan-600 transition-all">
-                  {isAuthLoading ? '通信中...' : 'はじめる'}
+          <div className="min-h-screen bg-cyan-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors">
+            <div className="bg-white dark:bg-slate-900 max-w-md w-full rounded-[2rem] p-8 shadow-xl border border-cyan-100 dark:border-slate-800 relative">
+              <button onClick={toggleTheme} className="absolute top-6 right-6 p-2 text-slate-400 hover:text-cyan-500 bg-slate-50 dark:bg-slate-800 rounded-full">
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
+              <div className="flex flex-col items-center mb-8">
+                <div className="bg-cyan-500 p-4 rounded-3xl mb-4 shadow-lg">
+                  <Fish className="w-10 h-10 text-white" />
+                </div>
+                <h1 className="text-3xl font-black text-slate-800 dark:text-slate-100 italic tracking-tighter">Fissher</h1>
+                <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-2">
+                  {authMode === 'login' ? 'おかえり！' : '海へ飛び込もう！'}
+                </p>
+              </div>
+
+              {authError && (
+                <div className="bg-rose-50 dark:bg-rose-950/50 text-rose-500 dark:text-rose-400 p-3 rounded-xl mb-6 text-sm font-bold flex items-center gap-2 border border-rose-100 dark:border-rose-900">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              <form onSubmit={authMode === 'login' ? handleLogin : handleRegister} className="space-y-4">
+                <div className="relative">
+                  <Hash className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
+                  <input
+                    type="text"
+                    value={customIdInput}
+                    onChange={(e) => setCustomIdInput(e.target.value)}
+                    placeholder="アカウントID (英数字)"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-2xl pl-10 pr-4 py-3.5 font-bold outline-none focus:ring-2 focus:ring-cyan-500"
+                    maxLength={15}
+                  />
+                </div>
+
+                {authMode === 'register' && (
+                  <div className="relative">
+                    <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={userNameInput}
+                      onChange={(e) => setUserNameInput(e.target.value)}
+                      placeholder="表示名 (ニックネーム)"
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-2xl pl-10 pr-4 py-3.5 font-bold outline-none focus:ring-2 focus:ring-cyan-500"
+                      maxLength={15}
+                    />
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isAuthLoading || !customIdInput}
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-black py-4 rounded-2xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isAuthLoading ? <RefreshCw className="w-5 h-5 animate-spin mx-auto" /> : (authMode === 'login' ? 'ログイン' : 'アカウント作成')}
                 </button>
               </form>
+
+              <div className="mt-8 text-center border-t border-slate-100 dark:border-slate-800 pt-6">
+                <button
+                  onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(''); }}
+                  className="text-cyan-500 dark:text-cyan-400 font-black hover:underline text-sm"
+                >
+                  {authMode === 'login' ? "新しくアカウントを作る" : "ログイン画面に戻る"}
+                </button>
+              </div>
             </div>
           </div>
         );
       }
 
+      // メインアプリ画面
       return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 dark:text-white pb-20">
-          <header className="p-4 border-b border-slate-200 dark:border-slate-800 sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-10 flex justify-between items-center">
-            <div className="font-black text-xl flex items-center gap-2"><Fish className="w-6 h-6 text-cyan-500"/> Fissher</div>
-            <div className="text-sm font-bold opacity-70">@{appUser.customId}</div>
-          </header>
-          
-          <main className="max-w-2xl mx-auto p-4">
-            <form onSubmit={handlePost} className="mb-8">
-              <div className="relative">
-                 <textarea 
-                  value={newPost} 
-                  onChange={e=>setNewPost(e.target.value)} 
-                  placeholder="いま何してる？" 
-                  className={`w-full p-4 rounded-3xl bg-white dark:bg-slate-900 border ${newPost.length > MAX_CHARS ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-200 dark:border-slate-800 focus:ring-cyan-500'} h-32 resize-none outline-none focus:ring-2 transition-all mb-2`}
-                />
-                <div className={`absolute bottom-6 right-4 text-sm font-bold ${newPost.length > MAX_CHARS ? 'text-rose-500' : 'text-slate-400'}`}>
-                  {newPost.length} / {MAX_CHARS}
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors pb-20">
+          {/* ヘッダー */}
+          <header className="sticky top-0 z-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3">
+            <div className="max-w-3xl mx-auto flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <div className="bg-cyan-500 p-1.5 rounded-xl shadow-md shadow-cyan-200 dark:shadow-none">
+                  <Fish className="w-6 h-6 text-white" />
                 </div>
+                <span className="text-xl font-black italic tracking-tighter">Fissher</span>
               </div>
-              <button 
-                disabled={!newPost.trim() || newPost.length > MAX_CHARS} 
-                className="bg-cyan-500 disabled:bg-slate-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full font-bold float-right transition-all hover:bg-cyan-600"
-              >
-                投稿
-              </button>
-              <div className="clear-both"></div>
-            </form>
+              
+              <div className="flex items-center gap-3">
+                <button onClick={toggleTheme} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl hover:text-cyan-500 transition-colors">
+                  {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                  {/* Dicebearのアバター復活！ */}
+                  <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${appUser.customId}`} className="w-5 h-5 rounded-full bg-white dark:bg-slate-600" alt="avatar" />
+                  <span className="text-xs font-bold truncate max-w-[80px]">
+                    {appUser.userName}
+                  </span>
+                </div>
+                <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-500 transition-colors" title="ログアウト">
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </header>
 
-            <div className="space-y-4">
-              {posts.map(p => (
-                <div key={p.id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-2 mb-3">
-                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold">
-                        {p.userName.charAt(0)}
-                     </div>
-                     <div>
-                        <div className="font-bold">{p.userName}</div>
-                        <div className="text-sm opacity-50">@{p.userId}</div>
-                     </div>
+          <main className="max-w-3xl mx-auto py-6 px-4">
+            {/* 投稿フォーム */}
+            <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 mb-8 shadow-sm border border-slate-200 dark:border-slate-800 relative">
+              <form onSubmit={handleSubmitPost} className="space-y-3">
+                <textarea
+                  value={newPost}
+                  onChange={(e) => setNewPost(e.target.value)}
+                  placeholder="今の気分は？"
+                  className="w-full text-lg font-medium border-none focus:ring-0 resize-none min-h-[100px] p-4 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-2xl placeholder:text-slate-400 outline-none transition-colors"
+                  maxLength={MAX_CHARS}
+                />
+                
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="button" onClick={handleAddTrend} disabled={isFetchingTrend} className="p-3 text-slate-400 hover:text-cyan-500 bg-slate-50 dark:bg-slate-800 rounded-xl transition-all">
+                      {isFetchingTrend ? <RefreshCw className="w-6 h-6 animate-spin" /> : <Hash className="w-6 h-6" />}
+                    </button>
+                    <button type="button" className="p-3 text-slate-400 hover:text-cyan-500 bg-slate-50 dark:bg-slate-800 rounded-xl transition-all">
+                      <Smile className="w-6 h-6" />
+                    </button>
+                    <span className="hidden sm:inline text-xs sm:text-sm text-slate-400 dark:text-slate-500 ml-1 font-bold">
+                      ※#タグの後はスペースを空けてね
+                    </span>
                   </div>
-                  <p className="whitespace-pre-wrap leading-relaxed">{p.text}</p>
+                  
+                  <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+                    <span className={`text-xs font-bold ${newPost.length >= MAX_CHARS ? 'text-rose-500' : 'text-slate-400'}`}>
+                      {newPost.length}/{MAX_CHARS}
+                    </span>
+                    <button
+                      type="submit"
+                      disabled={!newPost.trim() || isSubmitting || newPost.length > MAX_CHARS}
+                      className="px-8 py-3 rounded-full font-black text-white bg-cyan-500 hover:bg-cyan-600 shadow-lg shadow-cyan-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:shadow-none disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500"
+                    >
+                      {isSubmitting ? '放流中...' : '投稿する'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* タイムライン */}
+            <div className="space-y-6">
+              {posts.map((post) => (
+                <div key={post.id} className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                      <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.userId}`} className="w-9 h-9" alt="avatar" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold truncate">{post.userName}</h3>
+                          <span className="text-slate-400 text-xs">@{post.userId}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <time className="text-[10px] font-bold text-slate-400">
+                            {post.createdAt?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) || '--:--'}
+                          </time>
+                          {post.userId === appUser.customId && (
+                            <button onClick={() => setDeleteTarget({ type: 'post', postId: post.id })} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="削除">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px] sm:text-base mb-4 whitespace-pre-wrap break-words">
+                        {renderText(post.text)}
+                      </p>
+                      
+                      <div className="flex items-center gap-6 mb-4">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                          <MessageSquare className="w-5 h-5" />
+                          <span>{post.replyCount || 0}</span>
+                        </div>
+                        <button onClick={() => handleLike(post.id)} className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors">
+                          <Heart className={`w-5 h-5 ${post.likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                          <span>{post.likes || 0}</span>
+                        </button>
+                      </div>
+
+                      {/* 返信エリア */}
+                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                        <div className="flex gap-2">
+                          <input 
+                            type="text" 
+                            value={replyTexts[post.id] || ''}
+                            onChange={(e) => setReplyTexts(v => ({...v, [post.id]: e.target.value}))}
+                            placeholder="返信を送る..."
+                            className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+                            maxLength={150}
+                          />
+                          <button 
+                            onClick={() => handleReply(post.id)}
+                            disabled={!(replyTexts[post.id] || '').trim()}
+                            className="px-5 py-2 rounded-xl text-xs font-black bg-cyan-500 text-white disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all"
+                          >
+                            送信
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          {post.replies?.map((rep) => (
+                            <div key={rep.id} className="bg-slate-50/80 dark:bg-slate-800/50 p-3 rounded-2xl">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2">
+                                  <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${rep.userId}`} className="w-6 h-6 rounded-full bg-white dark:bg-slate-700" alt="avatar" />
+                                  <span className="font-bold text-sm">{rep.userName}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400">
+                                    {new Date(rep.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                  {rep.userId === appUser.customId && (
+                                    <button onClick={() => setDeleteTarget({ type: 'reply', postId: post.id, replyId: rep.id })} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="削除">
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 ml-8 break-words">
+                                {renderText(rep.text)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </main>
+
+          {/* 削除確認モーダル */}
+          {!!deleteTarget && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity">
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-all">
+                <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-2">確認</h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-6 font-bold text-sm">
+                  本当に{deleteTarget.type === 'post' ? 'この投稿' : 'この返信'}を削除してもよろしいですか？<br />この操作は取り消せません。
+                </p>
+                <div className="flex gap-3">
+                  <button onClick={() => setDeleteTarget(null)} className="flex-1 py-3 rounded-xl font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    キャンセル
+                  </button>
+                  <button onClick={confirmDelete} className="flex-1 py-3 rounded-xl font-black text-white bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-200 dark:shadow-none transition-all active:scale-95">
+                    削除する
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       );
     }
