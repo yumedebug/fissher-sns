@@ -50,7 +50,7 @@
 
     const { useState, useEffect } = React;
 
-    // --- アイコン群 (デザインを完全復元) ---
+    // --- アイコン群 ---
     const Fish = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.46-4.94 6-8.5 6-3.56 0-6.06-2.54-7-6Z"/><path d="M18 12v.01"/><path d="M2 9v6l5-3-5-3Z"/></svg>;
     const User = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
     const Hash = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>;
@@ -63,8 +63,9 @@
     const Sun = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>;
     const Moon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
     const Trash2 = ({className, title}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><title>{title}</title><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
+    const Send = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
 
-    // --- Firebase Setup (重複しないよう、ここに1回だけ記述) ---
+    // --- Firebase Setup ---
     const firebaseConfig = {
       apiKey: "AIzaSyDZv31PprpWS54nmd-b4Z3pO0zK6IZIIAg",
       authDomain: "my-fissher-sns.firebaseapp.com",
@@ -77,7 +78,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const appId = 'fissher-sns-v3'; // データベースの保存先フォルダ名
+    const appId = 'fissher-sns-v3';
 
     function App() {
       // --- テーマ設定 ---
@@ -126,7 +127,6 @@
       useEffect(() => {
         let isMounted = true;
         
-        // ローカルストレージからの即時復旧
         const savedId = localStorage.getItem('fissher_custom_id');
         const savedName = localStorage.getItem('fissher_user_name');
         if (savedId && savedName) {
@@ -169,7 +169,6 @@
           },
           (error) => {
              console.error("Firestore Subscribe Error:", error);
-             // オフラインエラーが出た場合はFirestoreのルールが原因です
           }
         );
         return () => unsubscribe();
@@ -458,7 +457,6 @@
                   {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                 </button>
                 <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
-                  {/* Dicebearのアバター復活！ */}
                   <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${appUser.customId}`} className="w-5 h-5 rounded-full bg-white dark:bg-slate-600" alt="avatar" />
                   <span className="text-xs font-bold truncate max-w-[80px]">
                     {appUser.userName}
@@ -514,95 +512,112 @@
 
             {/* タイムライン */}
             <div className="space-y-6">
-              {posts.map((post) => (
-                <div key={post.id} className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                      <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.userId}`} className="w-9 h-9" alt="avatar" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold truncate">{post.userName}</h3>
-                          <span className="text-slate-400 text-xs">@{post.userId}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <time className="text-[10px] font-bold text-slate-400">
-                            {post.createdAt?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) || '--:--'}
-                          </time>
-                          {post.userId === appUser.customId && (
-                            <button onClick={() => setDeleteTarget({ type: 'post', postId: post.id })} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="削除">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+              {posts.length === 0 ? (
+                // --- 「まだ海に放流されていません」の表示を復活 ---
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
+                  <div className="bg-cyan-50 dark:bg-cyan-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Fish className="w-10 h-10 text-cyan-400 dark:text-cyan-600 opacity-50" />
+                  </div>
+                  <p className="text-slate-500 dark:text-slate-400 font-bold text-lg mb-1">
+                    まだ海に放流されていません...
+                  </p>
+                  <p className="text-slate-400 dark:text-slate-500 text-sm">
+                    最初の1匹を放流してみましょう！
+                  </p>
+                </div>
+              ) : (
+                posts.map((post) => (
+                  <div key={post.id} className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                        <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.userId}`} className="w-9 h-9" alt="avatar" />
                       </div>
-                      <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px] sm:text-base mb-4 whitespace-pre-wrap break-words">
-                        {renderText(post.text)}
-                      </p>
-                      
-                      <div className="flex items-center gap-6 mb-4">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
-                          <MessageSquare className="w-5 h-5" />
-                          <span>{post.replyCount || 0}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold truncate">{post.userName}</h3>
+                            <span className="text-slate-400 text-xs">@{post.userId}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <time className="text-[10px] font-bold text-slate-400">
+                              {post.createdAt?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) || '--:--'}
+                            </time>
+                            {post.userId === appUser.customId && (
+                              <button onClick={() => setDeleteTarget({ type: 'post', postId: post.id })} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="削除">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <button onClick={() => handleLike(post.id)} className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors">
-                          <Heart className={`w-5 h-5 ${post.likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
-                          <span>{post.likes || 0}</span>
-                        </button>
-                      </div>
-
-                      {/* 返信エリア */}
-                      <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
-                        <div className="flex gap-2">
-                          <input 
-                            type="text" 
-                            value={replyTexts[post.id] || ''}
-                            onChange={(e) => setReplyTexts(v => ({...v, [post.id]: e.target.value}))}
-                            placeholder="返信を送る..."
-                            className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
-                            maxLength={150}
-                          />
-                          <button 
-                            onClick={() => handleReply(post.id)}
-                            disabled={!(replyTexts[post.id] || '').trim()}
-                            className="px-5 py-2 rounded-xl text-xs font-black bg-cyan-500 text-white disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all"
-                          >
-                            送信
+                        <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-[15px] sm:text-base mb-4 whitespace-pre-wrap break-words">
+                          {renderText(post.text)}
+                        </p>
+                        
+                        <div className="flex items-center gap-6 mb-4">
+                          <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                            <MessageSquare className="w-5 h-5" />
+                            <span>{post.replyCount || 0}</span>
+                          </div>
+                          <button onClick={() => handleLike(post.id)} className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors">
+                            <Heart className={`w-5 h-5 ${post.likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                            <span>{post.likes || 0}</span>
                           </button>
                         </div>
-                        
-                        <div className="space-y-3">
-                          {post.replies?.map((rep) => (
-                            <div key={rep.id} className="bg-slate-50/80 dark:bg-slate-800/50 p-3 rounded-2xl">
-                              <div className="flex items-center justify-between mb-1.5">
-                                <div className="flex items-center gap-2">
-                                  <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${rep.userId}`} className="w-6 h-6 rounded-full bg-white dark:bg-slate-700" alt="avatar" />
-                                  <span className="font-bold text-sm">{rep.userName}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] text-slate-400">
-                                    {new Date(rep.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                  {rep.userId === appUser.customId && (
-                                    <button onClick={() => setDeleteTarget({ type: 'reply', postId: post.id, replyId: rep.id })} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="削除">
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                              <p className="text-sm text-slate-700 dark:text-slate-300 ml-8 break-words">
-                                {renderText(rep.text)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
 
+                        {/* 返信エリア */}
+                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
+                          <div className="flex gap-2">
+                            <input 
+                              type="text" 
+                              value={replyTexts[post.id] || ''}
+                              onChange={(e) => setReplyTexts(v => ({...v, [post.id]: e.target.value}))}
+                              placeholder="返信を送る..."
+                              className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-cyan-500"
+                              maxLength={150}
+                            />
+                            {/* 「送信」ボタンを紙飛行機アイコンに変更 */}
+                            <button 
+                              onClick={() => handleReply(post.id)}
+                              disabled={!(replyTexts[post.id] || '').trim()}
+                              className="p-3 rounded-xl text-xs font-black bg-cyan-500 text-white disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 transition-all hover:bg-cyan-600 active:scale-95 flex items-center justify-center"
+                              title="送信"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {post.replies?.map((rep) => (
+                              <div key={rep.id} className="bg-slate-50/80 dark:bg-slate-800/50 p-3 rounded-2xl">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <div className="flex items-center gap-2">
+                                    <img src={`https://api.dicebear.com/7.x/bottts/svg?seed=${rep.userId}`} className="w-6 h-6 rounded-full bg-white dark:bg-slate-700" alt="avatar" />
+                                    <span className="font-bold text-sm">{rep.userName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-slate-400">
+                                      {new Date(rep.createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    {rep.userId === appUser.customId && (
+                                      <button onClick={() => setDeleteTarget({ type: 'reply', postId: post.id, replyId: rep.id })} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="削除">
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 ml-8 break-words">
+                                  {renderText(rep.text)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </main>
 
