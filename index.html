@@ -42,7 +42,7 @@
     import { initializeApp } from 'firebase/app';
     import { 
       getFirestore, collection, addDoc, onSnapshot, serverTimestamp, 
-      updateDoc, doc, increment, setDoc, getDoc, deleteDoc
+      updateDoc, doc, increment, setDoc, getDoc, deleteDoc, arrayUnion, arrayRemove
     } from 'firebase/firestore';
     import { 
       getAuth, signInAnonymously, onAuthStateChanged 
@@ -258,6 +258,7 @@
             userId: appUser.customId,
             userName: appUser.userName,
             likes: 0,
+            likedBy: [],
             replyCount: 0,
             replies: [],
             createdAt: serverTimestamp(),
@@ -301,8 +302,25 @@
       const handleLike = async (postId) => {
         if (!appUser) return;
         try {
+          const post = posts.find(p => p.id === postId);
+          if (!post) return;
+
           const postRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId);
-          await updateDoc(postRef, { likes: increment(1) });
+          const hasLiked = post.likedBy && post.likedBy.includes(appUser.customId);
+
+          if (hasLiked) {
+            // すでに「いいね」している場合は、取り消す
+            await updateDoc(postRef, { 
+              likes: increment(-1),
+              likedBy: arrayRemove(appUser.customId)
+            });
+          } else {
+            // まだ「いいね」していない場合は、追加する
+            await updateDoc(postRef, { 
+              likes: increment(1),
+              likedBy: arrayUnion(appUser.customId)
+            });
+          }
         } catch (error) {
           console.error("Like Error:", error);
         }
@@ -558,8 +576,8 @@
                             <MessageSquare className="w-5 h-5" />
                             <span>{post.replyCount || 0}</span>
                           </div>
-                          <button onClick={() => handleLike(post.id)} className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors">
-                            <Heart className={`w-5 h-5 ${post.likes > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                          <button onClick={() => handleLike(post.id)} className={`flex items-center gap-2 text-xs font-bold transition-colors ${post.likedBy && appUser && post.likedBy.includes(appUser.customId) ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}>
+                            <Heart className={`w-5 h-5 ${post.likedBy && appUser && post.likedBy.includes(appUser.customId) ? 'fill-rose-500 text-rose-500' : ''}`} />
                             <span>{post.likes || 0}</span>
                           </button>
                         </div>
