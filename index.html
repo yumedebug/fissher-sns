@@ -64,6 +64,7 @@
     const Moon = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
     const Trash2 = ({className, title}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><title>{title}</title><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
     const Send = ({className}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+    const Flag = ({className, title}) => <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><title>{title}</title><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
 
     // --- Firebase Setup ---
     const firebaseConfig = {
@@ -120,6 +121,14 @@
       const [replyTexts, setReplyTexts] = useState({});
       const [isFetchingTrend, setIsFetchingTrend] = useState(false);
       const [deleteTarget, setDeleteTarget] = useState(null);
+
+      // 非表示（通報）リスト
+      const [hiddenPosts, setHiddenPosts] = useState(() => {
+        try {
+          const saved = localStorage.getItem('fissher_hidden_posts');
+          return saved ? JSON.parse(saved) : [];
+        } catch(e) { return []; }
+      });
 
       const MAX_CHARS = 150;
 
@@ -362,6 +371,17 @@
         }, 500);
       };
 
+      const handleReport = (postId) => {
+        if (window.confirm("この放流を通報しますか？\n通報すると、あなたの画面からは非表示になります。")) {
+          const newHidden = [...hiddenPosts, postId];
+          setHiddenPosts(newHidden);
+          try {
+            // リロードしても消えないようにブラウザに記憶させる
+            localStorage.setItem('fissher_hidden_posts', JSON.stringify(newHidden));
+          } catch(e) {}
+        }
+      };
+
       const renderText = (text) => {
         if (!text) return null;
         return text.split(/(#[^\s]+)/g).map((part, i) => 
@@ -530,7 +550,7 @@
 
             {/* タイムライン */}
             <div className="space-y-6">
-              {posts.length === 0 ? (
+              {posts.filter(p => !hiddenPosts.includes(p.id)).length === 0 ? (
                 // --- 「まだ海に放流されていません」の表示を復活 ---
                 <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-10 border border-slate-200 dark:border-slate-800 shadow-sm text-center">
                   <div className="bg-cyan-50 dark:bg-cyan-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -544,7 +564,7 @@
                   </p>
                 </div>
               ) : (
-                posts.map((post) => (
+                posts.filter(p => !hiddenPosts.includes(p.id)).map((post) => (
                   <div key={post.id} className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
                     <div className="flex gap-4">
                       <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-200 dark:border-slate-700">
@@ -560,9 +580,13 @@
                             <time className="text-[10px] font-bold text-slate-400">
                               {post.createdAt?.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) || '--:--'}
                             </time>
-                            {post.userId === appUser.customId && (
+                            {post.userId === appUser.customId ? (
                               <button onClick={() => setDeleteTarget({ type: 'post', postId: post.id })} className="text-slate-400 hover:text-rose-500 transition-colors p-1" title="削除">
                                 <Trash2 className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button onClick={() => handleReport(post.id)} className="text-slate-400 hover:text-yellow-500 transition-colors p-1" title="通報（非表示にする）">
+                                <Flag className="w-4 h-4" />
                               </button>
                             )}
                           </div>
