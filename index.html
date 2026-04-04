@@ -121,6 +121,7 @@
       const [replyTexts, setReplyTexts] = useState({});
       const [isFetchingTrend, setIsFetchingTrend] = useState(false);
       const [deleteTarget, setDeleteTarget] = useState(null);
+      const [reportTarget, setReportTarget] = useState(null);
 
       // 非表示（通報）リスト
       const [hiddenPosts, setHiddenPosts] = useState(() => {
@@ -372,14 +373,18 @@
       };
 
       const handleReport = (postId) => {
-        if (window.confirm("この放流を通報しますか？\n通報すると、あなたの画面からは非表示になります。")) {
-          const newHidden = [...hiddenPosts, postId];
-          setHiddenPosts(newHidden);
-          try {
-            // リロードしても消えないようにブラウザに記憶させる
-            localStorage.setItem('fissher_hidden_posts', JSON.stringify(newHidden));
-          } catch(e) {}
-        }
+        setReportTarget(postId);
+      };
+
+      const confirmReport = () => {
+        if (!reportTarget) return;
+        const newHidden = [...hiddenPosts, reportTarget];
+        setHiddenPosts(newHidden);
+        try {
+          // リロードしても消えないようにブラウザに記憶させる
+          localStorage.setItem('fissher_hidden_posts', JSON.stringify(newHidden));
+        } catch(e) {}
+        setReportTarget(null);
       };
 
       const renderText = (text) => {
@@ -677,6 +682,28 @@
                   </button>
                   <button onClick={confirmDelete} className="flex-1 py-3 rounded-xl font-black text-white bg-rose-500 hover:bg-rose-600 shadow-lg shadow-rose-200 dark:shadow-none transition-all active:scale-95">
                     削除する
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 通報確認モーダル */}
+          {!!reportTarget && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity">
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 w-full max-w-sm shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-all">
+                <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
+                  <Flag className="w-5 h-5 text-yellow-500" />確認
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 mb-6 font-bold text-sm">
+                  この放流を通報しますか？<br />通報すると、あなたの画面からは非表示になります。
+                </p>
+                <div className="flex gap-3">
+                  <button onClick={() => setReportTarget(null)} className="flex-1 py-3 rounded-xl font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    キャンセル
+                  </button>
+                  <button onClick={confirmReport} className="flex-1 py-3 rounded-xl font-black text-white bg-yellow-500 hover:bg-yellow-600 shadow-lg shadow-yellow-200 dark:shadow-none transition-all active:scale-95">
+                    通報する
                   </button>
                 </div>
               </div>
